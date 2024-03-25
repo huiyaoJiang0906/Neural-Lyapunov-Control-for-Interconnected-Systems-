@@ -15,18 +15,18 @@ from tqdm import tqdm
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 def f_value(x1, x2, u):
-    G = 9.81
-    L1 = 0.3
-    L2 = 0.35
-    m1 = 0.4
-    m2 = 0.5
+    G = 9.8
+    L1 = 0.5
+    L2 = 0.5
+    m1 = 1
+    m2 = 1
     b1 = 0.009
     b2 = 0.009
     a1 = 0.1
-    a2 = 0.35
+    a2 = 0.1
     k = 30
     d = 0.1
-    l0 = 0.4
+    l0 = 1
     y1 = torch.zeros_like(x1)
     y2 = torch.zeros_like(x2)
     y1[:,0] = x1[:,1]
@@ -89,7 +89,7 @@ x_train = torch.cat((x_f1, x_f2, u_t), 1)
 # define parameters
 max_iter = 1000
 losses = []
-# NN: 1 hidden layers with 200 neurons
+
 fnet = fNet(n_input=5, n_hidden1=400, n_output=2)
 optimizer = torch.optim.Adam(fnet.parameters(), lr=0.06)
 
@@ -98,9 +98,9 @@ loss_func = torch.nn.MSELoss(reduction='sum')
 # # training
 for epoch in tqdm(range(max_iter)):
     x_train = x_train.to(device)
-    t_f1, t_f2 = t_f[0].to(device), t_f[1].to(device)  # 移动到同一设备
+    t_f1, t_f2 = t_f[0].to(device), t_f[1].to(device)  
     y_nn = fnet(x_train)
-    y_nn_device = y_nn.to(device)  # 或者将y_nn计算时直接移动到设备
+    y_nn_device = y_nn.to(device)  
 
     loss = loss_func(y_nn_device[:, :1], t_f1) + loss_func(y_nn_device[:, 1:], t_f2)
     losses.append(loss.item())
@@ -122,9 +122,9 @@ loss_func = torch.nn.MSELoss(reduction='sum')
 
 for epoch in tqdm(range(1000)):
     x_train = x_train.to(device)
-    t_f1, t_f2 = t_f[0].to(device), t_f[1].to(device)  # 移动到同一设备
+    t_f1, t_f2 = t_f[0].to(device), t_f[1].to(device)  
     y_nn = fnet(x_train)
-    y_nn_device = y_nn.to(device)  # 或者将y_nn计算时直接移动到设备
+    y_nn_device = y_nn.to(device) 
 
     loss = loss_func(y_nn_device[:, :1], t_f1) + loss_func(y_nn_device[:, 1:], t_f2)
     losses.append(loss.item())
@@ -186,7 +186,7 @@ for i in tqdm(range(0,N_l)):
         t_l = t_l.to(device)
         with torch.no_grad():
             y_l = fnet(X_l)
-
+            
         torch.cuda.empty_cache()
         # target
         loss_all = torch.norm(y_l-t_l, dim = 1)
@@ -204,7 +204,7 @@ np.savetxt("fw2.txt", f_w2, fmt="%s")
 # torch.save(fnet.cpu(), 'PF_fnet.pt')
 
 # load fNN from a file
-fnet = torch.load('PF_fnet.pt').to(device)
+# fnet = torch.load('PF_fnet.pt').to(device)
 
 def f_learned(x1,x2,u):
     X = torch.cat((x1, x2, u),1)
@@ -237,7 +237,7 @@ def CheckLyapunov(x, f, V, ball_lb, ball_ub, config, epsilon1,epsilon2,epsilon3)
     
     ball= Expression(0)
     lie_derivative_of_V = Expression(0)
-    #lie_derivative_of_V李导数
+    #lie_derivative_of_V
     for i in range(len(x)):
         ball += x[i]*x[i]
         lie_derivative_of_V += f[i]*V.Differentiate(x[i])  
@@ -289,7 +289,7 @@ c_3 = 1
 torch.manual_seed(10)
 x1 = torch.Tensor(N, 2).uniform_(-3, 3)
 x2 = torch.Tensor(N, 2).uniform_(-3, 3)
-x3 = torch.Tensor(800, 4).uniform_(-3, 3)
+x3 = torch.Tensor(500, 4).uniform_(-3, 3)
 x_0 = torch.zeros([1, 2])
 x_02 = torch.zeros([1, 4])
 x_0 = x_0.to(device)
@@ -300,29 +300,30 @@ X2 = Variable("X2")
 X3 = Variable("X3")
 X4 = Variable("X4")
 vars_ = [X1,X2]
-G = 9.81
-L1 = 0.3
-L2 = 0.35
-m1 = 0.4
-m2 = 0.5
+G = 9.8
+L1 = 0.5
+L2 = 0.5
+m1 = 1
+m2 = 1
 b1 = 0.009
 b2 = 0.009
 a1 = 0.1
-a2 = 0.35
+a2 = 0.1
 k = 30
 d = 0.1
-l0 = 0.4
+l0 = 1
 config = Config()
 config.use_polytope_in_forall = True
 config.use_local_optimization = True
 config.precision = 1e-2
 epsilon1 = torch.mean( c_1 *torch.norm(x1, dim=1))
 epsilon2 = torch.mean( c_2 *torch.norm(x1, dim=1))
-epsilon3 = torch.mean( c_3 *torch.norm(x1, dim=1))-3
+epsilon3 = torch.mean( c_3 *torch.norm(x1, dim=1))
 # Checking candidate V within a ball around the origin (ball_lb ≤ sqrt(∑xᵢ²) ≤ ball_ub)
 ball_lb = 0.5
 ball_ub = 3
-
+Kf = 13
+KF = 578
 out_iters = 0
 valid = False
 while out_iters < 1 and not valid: 
@@ -403,6 +404,7 @@ while out_iters < 1 and not valid:
                 print(result)
                 x1 = x1.to('cpu')
                 x2 = x2.to('cpu')
+                x3 = x3.to('cpu')
                 x1 = AddCounterexamples(x1,result,10)
                 x2 = AddCounterexamples(x2,result,10)
                 x3 = torch.cat((x1,x2), dim = 1)
